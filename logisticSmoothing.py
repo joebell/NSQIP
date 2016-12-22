@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import sklearn.metrics as sklm
 from sklearn.base import BaseEstimator
 from joeStats import gaussianKernel
+from joeStats import safeSameConvolve
 
 class smoothedLookupEstimator(BaseEstimator):
  
@@ -22,18 +23,40 @@ class smoothedLookupEstimator(BaseEstimator):
         self.lowCI = []
         self.upCI = []
         return
+    
+    def makeBinEdges(self, X):
+        # lowerEdge = X.min()
+        # upperEdge = X.max()
+        
+        # Create binnings for the model that omit the edges
+        edgePercentile = .025
+        lowIX = np.round(edgePercentile*len(X))
+        highIX = np.round((1-edgePercentile)*len(X))
+        sortX = np.sort(X.ravel())
+
+        lowerEdge = sortX[int(lowIX)]
+        upperEdge = sortX[int(highIX)]
+        
+        # Protect against degenerate binning
+        if lowerEdge == upperEdge:
+            print('*** Bin Edge Calculations in logisticSmoothing.py Failed ***')
+            upperEdge = upperEdge + 1
+        
+        return lowerEdge, upperEdge
 
     def fit(self, X, y):
         
-        binEdges = np.linspace(X.min(),X.max()+1, self.nBins + 1)
+        lowerEdge, upperEdge = self.makeBinEdges(X)
+        
+        binEdges = np.linspace(lowerEdge,upperEdge, self.nBins + 1)
         binWidth = binEdges[1] - binEdges[0]
         
         totalCounts, _ = np.histogram(X,bins=binEdges)
         targetCounts, _ = np.histogram(X[y==1],bins=binEdges)
         
         self.G = gaussianKernel( binWidth, self.sigma)
-        smTotal = np.convolve(totalCounts,self.G.kernel,mode='same')
-        smTarget = np.convolve(targetCounts,self.G.kernel,mode='same')
+        smTotal = safeSameConvolve(totalCounts,self.G.kernel)
+        smTarget = safeSameConvolve(targetCounts,self.G.kernel)
         
         self.modelX = binEdges[0:-1] + binWidth/2
         self.modelY = smTarget/smTotal
@@ -54,9 +77,12 @@ class smoothedLookupEstimator(BaseEstimator):
         idx = (np.abs(bigX - bigModel)).argmin(axis=0)
         return self.modelY[idx]
     
+
+    
     def bootModelCI(self, X, y, nBoots, alpha):
 
-        binEdges = np.linspace(X.min(),X.max()+1, self.nBins + 1)
+        lowerEdge, upperEdge = self.makeBinEdges(X)        
+        binEdges = np.linspace(lowerEdge,upperEdge, self.nBins + 1)
         nSamp = len(y)
         
         print('Bootstrapping confidence intervals...')
@@ -70,8 +96,8 @@ class smoothedLookupEstimator(BaseEstimator):
             bootTotalCounts, _ = np.histogram(bootX,bins=binEdges)
             bootTargetCounts, _ = np.histogram(bootX[bootY==1],bins=binEdges)
             
-            bSmTotal = np.convolve(bootTotalCounts,self.G.kernel,mode='same')
-            bSmTarget = np.convolve(bootTargetCounts,self.G.kernel,mode='same')
+            bSmTotal = safeSameConvolve(bootTotalCounts,self.G.kernel)
+            bSmTarget = safeSameConvolve(bootTargetCounts,self.G.kernel)
             
             bootCurves[bootN,:] = bSmTarget/bSmTotal
     
