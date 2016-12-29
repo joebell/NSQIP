@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import scipy.spatial.distance as dist
 import matplotlib.pyplot as plt
 
 class gaussianKernel():
@@ -42,5 +43,42 @@ def safeSameConvolve(longArg, shortArg):
             enIX = stIX + longLen
             return fullConv[stIX:enIX]
             
-            
+# Utility function for doubly-centering a matrix X
+def doublyCenter(X):
+    Xcols = np.outer(np.ones([X.shape[0],1]),X.mean(axis=0))
+    Xrows = np.outer(X.mean(axis=1),np.ones([1,X.shape[1]]))
+    Xdc = X - Xcols - Xrows + X.mean()
+    return Xdc
+
+# Calculate the distance covariance of two matrices
+# After: Székely, Gábor J., and Maria L. Rizzo. 2009. 
+#        “Brownian Distance Covariance.” The Annals of Applied Statistics 3 (4).
+#        Institute of Mathematical Statistics: 1236–65.
+def distCov(X, Y):
+    # Calculate pair-wise distance matrices
+    Xd = dist.squareform(dist.pdist(X, metric='euclidean', p=2))
+    Yd = dist.squareform(dist.pdist(Y, metric='euclidean', p=2))
+    # Doubly center
+    Xdc = doublyCenter(Xd)
+    Ydc = doublyCenter(Yd)
+    # Element-wise multiply
+    dCov = (Xdc*Ydc).mean()
+    return dCov
+
+# Calculate the distance correlation of two matrices.
+def distCorr(X, Y):
+    # Calculate pair-wise distance matrices
+    Xd = dist.squareform(dist.pdist(X, metric='euclidean', p=2))
+    Yd = dist.squareform(dist.pdist(Y, metric='euclidean', p=2))
+    # Doubly center
+    Xdc = doublyCenter(Xd)
+    Ydc = doublyCenter(Yd)
+    # Element-wise multiply
+    dCov = (Xdc*Ydc).mean()
+    
+    dVarX = (Xdc*Xdc).mean()
+    dVarY = (Ydc*Ydc).mean()
+    
+    dCorr = dCov/math.sqrt(dVarX*dVarY)
+    return dCorr            
             

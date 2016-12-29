@@ -85,7 +85,7 @@ class smoothedLookupEstimator(BaseEstimator):
         binEdges = np.linspace(lowerEdge,upperEdge, self.nBins + 1)
         nSamp = len(y)
         
-        print('Bootstrapping confidence intervals...')
+        print('\t Bootstrapping confidence intervals...')
         bootCurves = np.empty((nBoots,len(self.modelX)))
         for bootN in np.arange(nBoots):
             # Draw a collection of observations from the data with replacement
@@ -109,8 +109,8 @@ class smoothedLookupEstimator(BaseEstimator):
         self.bootedCI = True
         return 
     
-    def plotModel(self,axis):
-        plt.plot(self.modelX,self.modelY)
+    def plotModel(self,axis,**kwargs):
+        plt.plot(self.modelX,self.modelY, axes=axis, **kwargs)
         if self.bootedCI:
             plt.fill_between(self.modelX, self.upCI, self.lowCI, color='gray', alpha=0.5)
         self.G.plotKernel(axis)
