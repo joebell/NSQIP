@@ -64,7 +64,7 @@ class stepwiseLogisticRegression(BaseEstimator):
             baseAIC = self.modelAIC(X[baseCols], y)    
         except:
             baseAIC = np.inf
-        print('baseAIC = %.3f' % baseAIC)
+        # print('baseAIC = %.3f' % baseAIC)
 
         # Try to add all the variables we should try out in the model, recording AIC
         fitResultList = []
@@ -99,15 +99,16 @@ class stepwiseLogisticRegression(BaseEstimator):
                 
         # If the most significant variable is below current AIC, add it to the list
         fitResultList.sort()
+        # print(fitResultList)
         bestFit = fitResultList[0]
         
         if bestFit[0] < baseAIC:
             if bestFit[2] == 'add':
                 inclCol[bestFit[1]] = True 
-                print('\t Adding: AIC = %.2f \t %s' % (bestFit[0], bestFit[1]))
+                # print('\t Adding: AIC = %.2f \t %s' % (bestFit[0], bestFit[1]))
             elif bestFit[2] == 'remove':
                 inclCol[bestFit[1]] = False
-                print('\t Removing: AIC = %.2f \t %s' % (bestFit[0], bestFit[1]))
+                # print('\t Removing: AIC = %.2f \t %s' % (bestFit[0], bestFit[1]))
             smresult = bestFit[3]
             anyChanges = True
         else:
